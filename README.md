@@ -26,7 +26,7 @@ g++ -std=c++20 -pthread philosophers.cpp -o philosophers
 | Sekcja krytyczna   | Rozwiązanie         |
 | ------ | ---------------- |
 | Wypisywanie do konsoli   | `std::unique_lock<std::mutex> lock(stateChangeMutex);`   |
-| Podnoszenie i odkładanie zasobów (widelców)| `std::mutex` przypisany do każdego widelca|
+| Podnoszenie i odkładanie zasobów (widelców)| `std::mutex` przypisany do każdego zasobu|
 
 ### Przykład zabezpieczenia sekcji:
 ```bash
