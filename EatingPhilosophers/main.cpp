@@ -7,21 +7,6 @@
 
 using namespace std;
 
-// n - wątków = filozofów
-// n - widelców = zasobów
-// Każdy filozof działa wdlg schematu: "myślenie-jedzenie-myslenie-...". Każdy etap jest skończony
-// Aby zjeść filozof musi podnieś oba widelce, które znajdują się obok niego
-
-// Wymagania
-// Każdy z wątków raportuje o stanie w którym się znajduje (Wystarczy wydruk w konsoli)
-//● W programie nie dochodzi do trwałego zablokowania wątków (ang. deadlock)
-//● Program otrzymuje jako argument liczbę filozofów.
-
-//Rozwiązanie:
-// Filozofowie podnoszą najpierw lewy widelec, a potem prawy
-
-
-
 // VARIABLES
 int numPhilosophers; // number of philosophers
 vector<mutex> forks;
@@ -29,15 +14,14 @@ vector<thread> philosophers;
 mutex stateChangeMutex;
 std::condition_variable cv;
 
-//int thinkingTime = 2000; // 2 sekunda
-//int eatingTime = 2000;  // 2 sekunda
+//int thinkingTime = 2000; // 2 seconds
+//int eatingTime = 2000;  // 2 second
 
 std::mt19937 rng{std::random_device{}()};
-uniform_int_distribution<int> thinkingTime{500, 2000};  // 0.5-2 sekundy
-uniform_int_distribution<int> eatingTime{300, 1000};    // 0.3-1 sekunda
+uniform_int_distribution<int> thinkingTime{500, 2000};  // 0.5-2 seconds
+uniform_int_distribution<int> eatingTime{300, 1000};    // 0.3-1 seconds
 
 bool running = false;
-
 
 
 // FUNCTION THINK AND EAT
