@@ -12,7 +12,7 @@ Symulacja ilustruje zarządzanie  współbieznym dostępem do zasobów (forks) i
 ## Kompilacja i uruchomienie
 ```bash
 g++ -std=c++20 -pthread philosophers.cpp -o philosophers
-./philosophers
+./EatingPhilosophers
 ```
 
 ## Wątki i ich funkcje:
