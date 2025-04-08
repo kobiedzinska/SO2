@@ -1,3 +1,0 @@
-C:/Users/obied/CLionProjects/EatingPhilosophers/cmake-build-debug/CMakeFiles/EatingPhilosophers.dir
-C:/Users/obied/CLionProjects/EatingPhilosophers/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/obied/CLionProjects/EatingPhilosophers/cmake-build-debug/CMakeFiles/rebuild_cache.dir
