@@ -6,8 +6,13 @@ Repozytorium projektów z kursu **Systemy Operacyjne 2**
 Ten projekt implementuje wielowątkowy serwer czatu w języku Python, który umożliwia wielu klientom połączenie i komunikację w czasie rzeczywistym. Serwer wykorzystuje moduł threading do zarządzania wielowątkowością oraz ręcznie zaimplementowane mechanizmy ochrony sekcji krytycznych (mutexy, semafory) w celu zapewnienia bezpieczeństwa wątków i prawidłowej synchronizacji wiadomości między klientami.
 
 ## Kompilacja i uruchomienie
+### Serwer
 ```bash
-python chat_server.py [host] [port]
+python server.py [host] [port]
+```
+### Klient
+```bash
+python client.py [host] [port]
 ```
 Defaultowe wartości, jeśli żadne nie zostaną podane:
 host: 127.0.0.1 (localhost),
