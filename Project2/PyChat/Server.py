@@ -63,12 +63,31 @@ class ChatServer:
     def shutdown(self):
         self.running = False
 
+        # We're closing clients sockets
+        with self.clients_lock:
+            for client_socket, _ in self.clients:
+                try:
+                    client_socket.close()
+                except:
+                    pass
+            self.clients.clear() # we're clearing the clients list
+
+        # We;re closing server socket
+        if self.server_socket:
+            try:
+                self.server_socket.close()
+            except:
+                pass
+        with self.console_lock:
+            print("[SERVER] Server shutdown complete")
+
+
     def handle_client(self, client_socket, client_address):
         client_id = f"CLient-{client_address[0]}:{client_address[1]}"
 
         try:
             with self.clients_lock:
-                self.clients.append((client_id,client_id))
+                self.clients.append((client_id,client_socket)) # We add client to the shared list of clients on the chat
 
             welcome_message = f"Welcome {client_id}! There are {len(self.clients)} client(s) connected."
             client_socket.send(welcome_message.encode('utf-8'))
@@ -78,15 +97,16 @@ class ChatServer:
             # CLIENT is sending messages
             while self.running:
                 try:
-                    data = client_socket.recv(1024)
-                    if not data:
+                    data = client_socket.recv(1024) # We receive 1024 bytes/chars from client
+                    if not data:    # if the client has left the chat we stop the thread
                         break
 
-                    message = data.decode('utf-8').strip()
+                    message = data.decode('utf-8').strip() # We decode the message from bytes to readible text
 
-                    if message.lower() == 'exit':
+                    if message.lower() == '/exit':  # if client has written '/exit' we remove the client from server
                         break
 
+                    # We send messages from client with the special formatting
                     formatted_message = f"{client_id}: {message}"
                     self.queue_message(formatted_message)
 
@@ -97,11 +117,11 @@ class ChatServer:
                         print(f"[SERVER] Error receiving from {client_id}: {e}")
                     break
 
-        ### CLIENT is leaving server
+        ### CLIENT is being removed from server
         finally:
             # Removing client from client list
             with self.clients_lock:
-                self.clients = [c for c in self.clients if c[0] != client_socket]
+                self.clients = [c for c in self.clients if c[1] != client_socket]
 
             # Broadcasting message that client has left the chat
             self.queue_message(f"[SERVER] {client_id} has left the chat.")
