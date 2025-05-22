@@ -45,6 +45,13 @@ class ChatServer:
                     with self.console_lock:
                         print(f"[SERVER] New connection from {client_address}")
 
+                    # Creating client handling threads
+                    client_thread = threading.Thread(
+                        target=self.handle_client,
+                        args=(client_socket, client_address)
+                    )
+                    client_thread.daemon = True
+                    client_thread.start()
 
 
                 except Exception as e:
@@ -83,13 +90,13 @@ class ChatServer:
 
 
     def handle_client(self, client_socket, client_address):
-        client_id = f"CLient-{client_address[0]}:{client_address[1]}"
+        client_id = f"Client-{client_address[0]}:{client_address[1]}"
 
         try:
             with self.clients_lock:
                 self.clients.append((client_id,client_socket)) # We add client to the shared list of clients on the chat
 
-            welcome_message = f"Welcome {client_id}! There are {len(self.clients)} client(s) connected."
+            welcome_message = f"Welcome {client_id}!"
             client_socket.send(welcome_message.encode('utf-8'))
 
             self.queue_message(f"[SERVER] {client_id} has joined the chat.")
