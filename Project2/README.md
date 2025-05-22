@@ -42,6 +42,25 @@ port: 8888
 with self.clients_lock:
 self.clients.append((client_id, client_socket))
 ```
+## Semafory
+| Semafor | Wartość | Cel użycia |
+|---------| -------- | ---------- |
+| connection_semaphore | 5 (max_connections) | Ogranicza liczbę jednoczesnych klientów do max_connections|
+
+### Przykład użycia semafora:
+```python
+if self.connection_semaphore.acquire(blocking=False):
+    try:
+        client_socket, client_address = self.server_socket.accept()
+        # ...
+    except Exception as e:
+        self.connection_semaphore.release()  # Releasing if there's error
+else:
+    print("[SERVER] Max connections reached, waiting...")
+    threading.Event().wait(5.0)  # waiting 5 seconds
+```
 
 ### 📎 Linki:
-- dokumentacja 
+- threading https://docs.python.org/3/library/threading.html#
+- socket https://docs.python.org/3/howto/sockets.html
+- queue https://docs.python.org/3/library/queue.html
