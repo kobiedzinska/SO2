@@ -19,31 +19,48 @@ host: 127.0.0.1 (localhost),
 port: 8888
 
 ## Wątki i ich funkcje:
-| Wątek   | funkcja         |
-| ------ | ---------------- |
-|nazwa_watku| funkcja |
+### Serwer
+| Wątek   | funkcja         | Opis    |
+| ------ | ---------------- |---------|
+| główny wątek | start() | Akceptuje połączenia i uruchamia serwer|
+| zajmowanie się klientem | handle_client() | Obsługuje komunikację z pojedynczym klientem |
+| zajmowanie się wiadomościami | dispatch_messages() | Odpowiada za rozsyłanie wiadomości do wszystkich klientów |
 
-- Czas myślenia i jedzenia każdego filozofa jest wartością losową pomiędzy 0.5 a 2 sekundami.
+### Klient
+| Wątek   | funkcja         | Opis    |
+| ------ | ---------------- |---------|
 
 ## Sekcje krytyczne 
-| Sekcja krytyczna   | Rozwiązanie         |
-| ------ | ---------------- |
-| Wypisywanie do konsoli   | `std::unique_lock<std::mutex> lock(stateChangeMutex);`   |
-| Podnoszenie i odkładanie zasobów (widelców)| `std::mutex` przypisany do każdego zasobu|
+| Sekcja  | Blokada   | Powód użycia |
+| ------ | ---------------- | -------- |
+| clients   | clients_lock (threading.Lock) | Lista klientów może być modyfikowana przez wiele wątków |
+| print() oraz komunikaty na konsoli | console_lock (threading.Lock) | Jednoczesne wypisywanie tekstu na konsolę przez wiele wątków |
+| Kolejka wiadomości message_queue | none | queue.Queue jest bezpieczna dla wątków, nie wymaga dodatkowej blokady |
 
 ### Przykład zabezpieczenia sekcji:
-```bash
-{
-    std::unique_lock<std::mutex> lock(stateChangeMutex);
-    cout << "Phil " << ID << " is thinking" << endl;
-}
+```python
+with self.clients_lock:
+self.clients.append((client_id, client_socket))
 ```
-## Rozwiązanie problemu zakleszczenia (deadlock)
-- Ostatni filozof podnosi najpierw prawy widelec, a następnie lewy. => Eliminujemy wtedy cykliczne oczekiwanie.
-```bash
-if (ID == numPhilosophers - 1) {
-    swap(leftFork, rightFork);
-}
+## Semafory
+| Semafor | Wartość | Cel użycia |
+|---------| -------- | ---------- |
+| connection_semaphore | 5 (max_connections) | Ogranicza liczbę jednoczesnych klientów do max_connections|
+
+### Przykład użycia semafora:
+```python
+if self.connection_semaphore.acquire(blocking=False):
+    try:
+        client_socket, client_address = self.server_socket.accept()
+        # ...
+    except Exception as e:
+        self.connection_semaphore.release()  # Releasing if there's error
+else:
+    print("[SERVER] Max connections reached, waiting...")
+    threading.Event().wait(5.0)  # waiting 5 seconds
 ```
+
 ### 📎 Linki:
-- dokumentacja 
+- threading https://docs.python.org/3/library/threading.html#
+- socket https://docs.python.org/3/howto/sockets.html
+- queue https://docs.python.org/3/library/queue.html
