@@ -6,7 +6,7 @@ import queue
 class ChatServer:
 
     # Initial server configuration
-    def __init__(self, host='127.0.0.1', port=8888):
+    def __init__(self, host, port):
         self.host = host
         self.port = port
         self.server_socket = None
@@ -19,15 +19,16 @@ class ChatServer:
         self.console_lock = threading.Lock()
         # Message queue and  semaphore
         self.message_queue = queue.Queue()
-
+        self.max_connections = 5
+        self.connection_semaphore = threading.Semaphore(self.max_connections)
 
     def start(self):
         try:
             print("[SERVER] Creating server...")
-            self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)           # We create server socket, AF_INET = ipv4, SOCK_STREAM = TCP Connection
-            self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)   # Enables reusability of address IP and port number after closing server
-            self.server_socket.bind((self.host, self.port))                                 # assigning socket's address IP and port number to listen
-            self.server_socket.listen(5)                                                    # we listen max 5 connections
+            self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.server_socket.bind((self.host, self.port))
+            self.server_socket.listen(self.max_connections)
 
             with self.console_lock:
                 print(f"[SERVER] Started on {self.host}:{self.port}")
@@ -37,27 +38,41 @@ class ChatServer:
             message_dispatcher.daemon = True
             message_dispatcher.start()
 
-
             ## Accepting CLIENT connections
             while self.running:
                 try:
-                    client_socket, client_address = self.server_socket.accept()
-                    with self.console_lock:
-                        print(f"[SERVER] New connection from {client_address}")
+                    # We're checking if there's space for connection
+                    if self.connection_semaphore.acquire(blocking=False):
+                        try:
+                            client_socket, client_address = self.server_socket.accept()
+                            with self.console_lock:
+                                print(f"[SERVER] New connection from {client_address}")
 
-                    # Creating client handling threads
-                    client_thread = threading.Thread(
-                        target=self.handle_client,
-                        args=(client_socket, client_address)
-                    )
-                    client_thread.daemon = True
-                    client_thread.start()
+                            # Creating client handling threads
+                            client_thread = threading.Thread(
+                                target=self.handle_client_with_semaphore,  # zmieniona nazwa metody
+                                args=(client_socket, client_address)
+                            )
+                            client_thread.daemon = True
+                            client_thread.start()
 
+                        except Exception as e:
+                            # if there is an error with the semaphore
+                            self.connection_semaphore.release()
+                            if self.running:
+                                with self.console_lock:
+                                    print(f"[SERVER] Error accepting connection: {e}")
+                            break
+                    else:
+                        # There's no free space for connection, we wait
+                        with self.console_lock:
+                            print("[SERVER] Max connections reached, waiting...")
+                        threading.Event().wait(5.0)  # wait
 
                 except Exception as e:
                     if self.running:
                         with self.console_lock:
-                            print(f"[SERVER] Error accepting connection: {e}")
+                            print(f"[SERVER] Error in main loop: {e}")
                     break
 
         except Exception as e:
@@ -126,6 +141,7 @@ class ChatServer:
 
         ### CLIENT is being removed from server
         finally:
+            self.connection_semaphore.release()
             # Removing client from client list
             with self.clients_lock:
                 self.clients = [c for c in self.clients if c[1] != client_socket]
