@@ -50,7 +50,7 @@ class ChatServer:
 
                             # Creating client handling threads
                             client_thread = threading.Thread(
-                                target=self.handle_client_with_semaphore,  # zmieniona nazwa metody
+                                target=self.handle_client_with_semaphore,
                                 args=(client_socket, client_address)
                             )
                             client_thread.daemon = True
@@ -81,7 +81,6 @@ class ChatServer:
         finally:
             self.shutdown()
 
-
     def shutdown(self):
         self.running = False
 
@@ -94,7 +93,7 @@ class ChatServer:
                     pass
             self.clients.clear() # we're clearing the clients list
 
-        # We;re closing server socket
+        # We're closing server socket
         if self.server_socket:
             try:
                 self.server_socket.close()
@@ -103,13 +102,19 @@ class ChatServer:
         with self.console_lock:
             print("[SERVER] Server shutdown complete")
 
+    def handle_client_with_semaphore(self, client_socket, client_address):
+        try:
+            self.handle_client(client_socket, client_address)
+        finally:
+            # Always release the semaphore when client handling is done
+            self.connection_semaphore.release()
 
     def handle_client(self, client_socket, client_address):
         client_id = f"Client-{client_address[0]}:{client_address[1]}"
 
         try:
             with self.clients_lock:
-                self.clients.append((client_id,client_socket)) # We add client to the shared list of clients on the chat
+                self.clients.append((client_id, client_socket)) # We add client to the shared list of clients on the chat
 
             welcome_message = f"Welcome {client_id}!"
             client_socket.send(welcome_message.encode('utf-8'))
@@ -141,7 +146,6 @@ class ChatServer:
 
         ### CLIENT is being removed from server
         finally:
-            self.connection_semaphore.release()
             # Removing client from client list
             with self.clients_lock:
                 self.clients = [c for c in self.clients if c[1] != client_socket]
@@ -158,7 +162,6 @@ class ChatServer:
             # We inform server that client has left
             with self.console_lock:
                 print(f"[SERVER] Connection with {client_id} closed")
-
 
     def queue_message(self, message):
         self.message_queue.put(message)
@@ -181,11 +184,21 @@ class ChatServer:
                 with self.clients_lock:
                     current_clients = self.clients.copy()
 
-                for client_socket, _ in current_clients:
+                for client_id, client_socket in current_clients:
                     try:
-                        client_socket.send(f"{message}\n".encode('utf-8'))
-                    except:
-                        pass
+
+                        # We get the client_id from message, so we don't send to clients their own messages
+                        parts = message.split(": ",1)
+                        message_client_id = parts[0]
+                        if client_id != message_client_id:
+                            client_socket.send(f"{message}\n".encode('utf-8'))
+
+                    except Exception as e:
+                        # If sending fails, remove the client
+                        with self.console_lock:
+                            print(f"[SERVER] Failed to send to {client_id}: {e}")
+                        with self.clients_lock:
+                            self.clients = [c for c in self.clients if c[1] != client_socket]
 
                 # Mark the processed message
                 self.message_queue.task_done()
