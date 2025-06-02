@@ -12,7 +12,7 @@ python server.py [host] [port]
 ```
 ### Klient
 ```bash
-python client.py [host] [port]
+python Client.py [host] [port]
 ```
 Defaultowe wartości, jeśli żadne nie zostaną podane:
 host: 127.0.0.1 (localhost),
