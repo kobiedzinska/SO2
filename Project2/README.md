@@ -26,10 +26,6 @@ port: 8888
 | zajmowanie się klientem | handle_client() | Obsługuje komunikację z pojedynczym klientem |
 | zajmowanie się wiadomościami | dispatch_messages() | Odpowiada za rozsyłanie wiadomości do wszystkich klientów |
 
-### Klient
-| Wątek   | funkcja         | Opis    |
-| ------ | ---------------- |---------|
-
 ## Sekcje krytyczne 
 | Sekcja  | Blokada   | Powód użycia |
 | ------ | ---------------- | -------- |
